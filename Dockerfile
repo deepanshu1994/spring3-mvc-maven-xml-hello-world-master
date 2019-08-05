@@ -13,7 +13,7 @@ RUN java -version
 
 #WORKDIR /opt/tomcat/webapps
 ##RUN curl -O -L https://github.com/AKSarav/SampleWebApp/raw/master/dist/SampleWebApp.war
-COPY target/*.jar /opt/tomcat/webapps/
+COPY target/*.war /opt/tomcat/webapps/
 
 EXPOSE 8080
 
