@@ -16,7 +16,7 @@ RUN java -version
 COPY target/*.war /opt/tomcat/webapps/
 
 EXPOSE 8080
-
-WORKDIR /opt/tomcat/bin
-CMD ["catalina.sh", "run"]
+#ENV CATALINA_HOME /opt/tomcat
+#WORKDIR /opt/tomcat/bin
+CMD ["/opt/tomcat/bin/catalina.sh", "run"]
 #RUN nohup sh startup.sh &
