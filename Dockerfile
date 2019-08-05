@@ -1,0 +1,22 @@
+FROM centos
+
+MAINTAINER da9916@gmail.com
+
+RUN mkdir /opt/tomcat/
+
+WORKDIR /opt/tomcat
+RUN curl -O https://www-eu.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz
+RUN tar xvfz apache*.tar.gz
+RUN mv apache-tomcat-8.5.41/* /opt/tomcat/.
+RUN yum -y install java
+RUN java -version
+
+#WORKDIR /opt/tomcat/webapps
+##RUN curl -O -L https://github.com/AKSarav/SampleWebApp/raw/master/dist/SampleWebApp.war
+COPY target/*.jar /opt/tomcat/webapps/
+
+EXPOSE 8080
+
+WORKDIR /opt/tomcat/bin
+CMD ["catalina.sh", "run"]
+#RUN nohup sh startup.sh &
