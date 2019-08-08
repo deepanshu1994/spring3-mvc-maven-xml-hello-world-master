@@ -1,0 +1,85 @@
+node{
+   stage('GIT CHECKOUT')
+   {
+       git url: 'https://github.com/deepanshu1994/spring3-mvc-maven-xml-hello-world-master'
+       
+   }
+   stage("BUILD & SONARQUBE ANALYSIS") 
+   {
+        withSonarQubeEnv('sonarqube') 
+        {
+            def mvnHome = tool name: 'maven', type: 'maven'
+            def mvnCMD = "${mvnHome}/bin/mvn"
+            //sh '${mvnCMD} clean package sonar:sonar'
+            def scannerHome = tool name: 'sonarqube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+            sh "${mvnCMD} clean package org.sonarsource.scanner.maven:sonar-maven-plugin:3.6.0.1398:sonar"
+            //sh "${scannerHome}/bin/sonar-scanner"
+        }
+    }
+    stage("QUALITY GATE STATUS") 
+    {
+        timeout(time: 10, unit: 'MINUTES') 
+        {
+            waitForQualityGate abortPipeline: true
+        }
+    }
+   stage('DOCKER IMAGE BUILD')
+   {
+     def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
+     def docCMD = "${docHome}/bin/docker"
+     sh "${docCMD} build -t da9916/my-app:${Build_Number} ."
+   }
+   stage('PUSH IMAGE DOCKER HUB')
+   {
+     def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
+     def docCMD = "${docHome}/bin/docker"
+     withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerhubpwd')]) 
+     {
+        sh "${docCMD} login -u da9916 -p ${dockerHubPwd}"
+     }
+     sh "${docCMD} push da9916/my-app:${Build_Number}"
+     sh "${docCMD} rmi da9916/my-app:${Build_Number}"
+   }
+}
+stage('DEPLOY APPROVAL'){
+    input "Deploy to prod?"
+}
+node{
+   stage('DEPLOY DOCKER IMAGE')
+   {
+     def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
+     def docCMD = "${docHome}/bin/docker"
+     //def a = sh "${docCMD} ps | grep test | wc -l"
+     script{
+        def lastSuccessfulBuildID = 0
+        def build = currentBuild.previousBuild
+        while (build != null) {
+            if (build.result == "SUCCESS")
+            {
+                lastSuccessfulBuildID = build.id as Integer
+                break
+            }
+            build = build.previousBuild
+        }
+        println lastSuccessfulBuildID
+        sh "echo ${lastSuccessfulBuildID}"
+        sh "${docCMD} ps | grep test | wc -l > commandResult"
+        result = readFile('commandResult').trim()
+        if ( "${result}" == "1" )
+        {
+         sh "echo if"
+         sh "${docCMD} stop test"
+         sh "${docCMD} rm test"
+         sh "${docCMD} rmi da9916/my-app:${lastSuccessfulBuildID}"
+         sh "${docCMD} pull da9916/my-app:${Build_Number}"
+         sh "${docCMD} run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
+        }
+        else
+        {
+         sh "echo else"
+         sh "${docCMD} pull da9916/my-app:${Build_Number}"
+         sh "${docCMD} run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
+        }
+   }
+}
+}
