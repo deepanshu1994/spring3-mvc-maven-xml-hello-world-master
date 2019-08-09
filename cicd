@@ -45,6 +45,12 @@ stage('DEPLOY APPROVAL'){
     input "Deploy to prod?"
 }
 node{
+	def remote = [:]
+	remote.name = 'devserver'
+	remote.host = '13.126.158.112'
+	remote.user = 'ec2-user'
+	remote.password = 'deepanshu'
+	remote.allowAnyHosts = true
    stage('DEPLOY DOCKER IMAGE')
    {
      def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
@@ -63,22 +69,23 @@ node{
         }
         println lastSuccessfulBuildID
         sh "echo ${lastSuccessfulBuildID}"
-        sh "${docCMD} ps | grep test | wc -l > commandResult"
-        result = readFile('commandResult').trim()
+		  result = sshCommand remote: remote, command: 'docker ps | grep test | wc -l'
+        //sh "${docCMD} ps | grep test | wc -l > commandResult"
+        //result = readFile('commandResult').trim()
         if ( "${result}" == "1" )
         {
          sh "echo if"
-         sh "${docCMD} stop test"
-         sh "${docCMD} rm test"
-         sh "${docCMD} rmi da9916/my-app:${lastSuccessfulBuildID}"
-         sh "${docCMD} pull da9916/my-app:${Build_Number}"
-         sh "${docCMD} run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
+         sshCommand remote: remote, command: 'docker stop test'
+         sshCommand remote: remote, command: 'docker rm test'
+         sshCommand remote: remote, command: "docker rmi da9916/my-app:${lastSuccessfulBuildID}"
+         sshCommand remote: remote, command: "docker pull da9916/my-app:${Build_Number}"
+         sshCommand remote: remote, command: "docker run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
         }
         else
         {
          sh "echo else"
-         sh "${docCMD} pull da9916/my-app:${Build_Number}"
-         sh "${docCMD} run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
+         sshCommand remote: remote, command: "docker pull da9916/my-app:${Build_Number}"
+         sshCommand remote: remote, command: "docker run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
         }
    }
 }
