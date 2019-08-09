@@ -42,7 +42,7 @@ node{
    }
 }
 stage('DEPLOY APPROVAL'){
-    input "Deploy to prod?"
+    input "DEPLOY TO DEV SERVER?"
 }
 node{
 	def remote = [:]
@@ -79,13 +79,13 @@ node{
          sshCommand remote: remote, command: 'docker rm test'
          sshCommand remote: remote, command: "docker rmi da9916/my-app:${lastSuccessfulBuildID}"
          sshCommand remote: remote, command: "docker pull da9916/my-app:${Build_Number}"
-         sshCommand remote: remote, command: "docker run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
+         sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
         }
         else
         {
          sh "echo else"
          sshCommand remote: remote, command: "docker pull da9916/my-app:${Build_Number}"
-         sshCommand remote: remote, command: "docker run -d --name test -p 8081:8080 da9916/my-app:${Build_Number}"
+         sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
         }
    }
 }
