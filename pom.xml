@@ -5,7 +5,7 @@
 	<artifactId>HCL-CICD</artifactId>
 	<packaging>war</packaging>
 	<version>1.0</version>
-	<name>spring3 mvc maven</name>
+	<name>HCL-CICD</name>
 
 	<properties>
 		<jdk.version>1.6</jdk.version>
