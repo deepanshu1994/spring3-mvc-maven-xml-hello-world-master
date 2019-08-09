@@ -53,9 +53,6 @@ node{
 	remote.allowAnyHosts = true
    stage('DEPLOY DOCKER IMAGE')
    {
-     def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
-     def docCMD = "${docHome}/bin/docker"
-     //def a = sh "${docCMD} ps | grep test | wc -l"
      script{
         def lastSuccessfulBuildID = 0
         def build = currentBuild.previousBuild
@@ -70,21 +67,17 @@ node{
         println lastSuccessfulBuildID
         sh "echo ${lastSuccessfulBuildID}"
 		  result = sshCommand remote: remote, command: 'docker ps | grep test | wc -l'
-        //sh "${docCMD} ps | grep test | wc -l > commandResult"
-        //result = readFile('commandResult').trim()
         if ( "${result}" == "1" )
         {
          sh "echo if"
          sshCommand remote: remote, command: 'docker stop test'
          sshCommand remote: remote, command: 'docker rm test'
          sshCommand remote: remote, command: "docker rmi da9916/my-app:${lastSuccessfulBuildID}"
-         sshCommand remote: remote, command: "docker pull da9916/my-app:${Build_Number}"
          sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
         }
         else
         {
          sh "echo else"
-         sshCommand remote: remote, command: "docker pull da9916/my-app:${Build_Number}"
          sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
         }
    }
