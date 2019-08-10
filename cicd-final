@@ -1,0 +1,177 @@
+node{
+   stage('GIT CHECKOUT')
+   {
+	try {
+			notifyStarted()
+			git url: 'https://github.com/deepanshu1994/spring3-mvc-maven-xml-hello-world-master'
+		}
+    catch(err) {
+				notifyFailed()
+				throw(err)
+				}
+   }
+   stage("BUILD & SONARQUBE ANALYSIS") 
+   {
+	try {
+        withSonarQubeEnv('sonarqube') 
+			{
+				def mvnHome = tool name: 'maven', type: 'maven'
+				def mvnCMD = "${mvnHome}/bin/mvn"
+				//sh '${mvnCMD} clean package sonar:sonar'
+				def scannerHome = tool name: 'sonarqube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+				sh "${mvnCMD} clean package org.sonarsource.scanner.maven:sonar-maven-plugin:3.6.0.1398:sonar"
+				//sh "${scannerHome}/bin/sonar-scanner"
+			}
+		}
+	 catch(err) {
+				notifyFailed()
+				throw(err)
+				}
+    }
+    stage("QUALITY GATE STATUS") 
+    {
+		try {
+				timeout(time: 10, unit: 'MINUTES') 
+				{
+					waitForQualityGate abortPipeline: true
+				}
+			}
+	 catch(err) {
+				notifyFailed()
+				throw(err)
+				}
+    }
+   stage('DOCKER IMAGE BUILD')
+   {
+		try {
+			 def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
+			 def docCMD = "${docHome}/bin/docker"
+			 sh "${docCMD} build -t da9916/my-app:${Build_Number} ."
+			 }
+	 catch(err) {
+				notifyFailed()
+				throw(err)
+				} 
+   }
+   stage('PUSH IMAGE DOCKER HUB')
+   {
+		try {
+			 def docHome = tool name: 'docker', type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
+			 def docCMD = "${docHome}/bin/docker"
+			 withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerhubpwd')]) 
+			 {
+				sh "${docCMD} login -u da9916 -p ${dockerHubPwd}"
+			 }
+			 sh "${docCMD} push da9916/my-app:${Build_Number}"
+			 sh "${docCMD} rmi da9916/my-app:${Build_Number}"
+			 }
+	 catch(err) {
+				notifyFailed()
+				throw(err)
+				}
+   }
+}
+
+stage('DEPLOY APPROVAL'){
+try {
+    //input "DEPLOY TO DEV SERVER?"
+    def userInput = true
+    notifyApprover()
+    timeout(time: 30, unit: 'SECONDS') 
+        { // change to a convenient timeout for you
+                userInput = input(
+                id: 'Proceed', message: "Would you like to deploy build : ${env.BUILD_NUMBER}?", parameters: [
+                [$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']
+                ])
+        }
+	}
+catch(err) {
+		notifyAborted()
+		throw(err)
+		}	
+}
+
+node{
+	def remote = [:]
+	remote.name = 'devserver'
+	remote.host = '13.233.28.117'
+	remote.user = 'ec2-user'
+	withCredentials([string(credentialsId: 'dev_server_pwd', variable: 'devserverpwd')])
+  	{
+	remote.password = "${devserverpwd}"
+	}
+	remote.allowAnyHosts = true
+   stage('DEPLOY DOCKER IMAGE')
+   {
+   try {
+     script{
+        def lastSuccessfulBuildID = 0
+        def build = currentBuild.previousBuild
+        while (build != null) {
+            if (build.result == "SUCCESS")
+            {
+                lastSuccessfulBuildID = build.id as Integer
+                break
+            }
+            build = build.previousBuild
+        }
+        println lastSuccessfulBuildID
+        sh "echo ${lastSuccessfulBuildID}"
+		  res = sshCommand remote: remote, command: 'docker ps | grep test | wc -l'
+		  result = sshCommand remote: remote, command: 'docker ps -a | grep test | wc -l'
+        if ( "${res}" == "1" )
+        {
+         sh "echo if"
+         sshCommand remote: remote, command: 'docker stop test'
+         sshCommand remote: remote, command: 'docker rm test'
+         sshCommand remote: remote, command: "docker rmi da9916/my-app:${lastSuccessfulBuildID}"
+         sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
+        }
+		else if ( "${result}" == "1" )
+        {
+         sh "echo if"
+         sshCommand remote: remote, command: 'docker rm test'
+         sshCommand remote: remote, command: "docker rmi da9916/my-app:${lastSuccessfulBuildID}"
+         sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
+        }
+        else
+        {
+         sh "echo else"
+         sshCommand remote: remote, command: "docker run -d --name test -p 80:8080 da9916/my-app:${Build_Number}"
+        }
+   }
+   }
+	 catch(err) {
+				notifyFailed()
+				throw(err)
+				}
+}
+}
+
+def notifyApprover() {
+mail to: 'da9916@gmail.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] approver request", mimeType: 'text/html',
+       body: """Build deployment started for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}].
+Please provide your approval : <a href="${env.BUILD_URL}input/">approve</a> !"""
+ }
+ 
+ def notifyStarted() {
+mail to: 'da9916@gmail.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] started", mimeType: 'text/html',
+       body: """Build deployment started for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]."""
+ }
+
+def notifyCompleted() {
+mail to: 'da9916@gmail.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] completed", mimeType: 'text/html',
+       body: """Build deployment completed for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]."""
+ }
+ 
+ def notifyAborted() {
+mail to: 'da9916@gmail.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] rejected/aborted", mimeType: 'text/html',
+       body: """Build deployment rejected/aborted for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}].
+For more details : <a href="${env.BUILD_URL}console">click here</a> !"""
+ }
+
+  def notifyFailed() {
+mail to: 'da9916@gmail.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] failed", mimeType: 'text/html',
+       body: """Build deployment failed for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}].
+For more details : <a href="${env.BUILD_URL}console">click here</a> !"""
+ }
