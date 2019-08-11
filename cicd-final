@@ -3,7 +3,7 @@ node{
    {
 	try {
 			notifyStarted()
-			git url: 'https://github.com/deepanshu1994/spring3-mvc-maven-xml-hello-world-master'
+			git branch: 'master', credentialsId: 'github_pwd', url: 'https://github.com/deepanshu1994/spring3-mvc-maven-xml-hello-world-master'
 		}
     catch(err) {
 				notifyFailed()
