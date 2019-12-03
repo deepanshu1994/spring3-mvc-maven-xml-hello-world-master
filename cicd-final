@@ -150,29 +150,29 @@ node{
 }
 
 def notifyApprover() {
-mail cc: 'ankurd@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com,tripurari.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] approver request", mimeType: 'text/html',
+mail cc: 'deepanshu.a@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] approver request", mimeType: 'text/html',
        body: """Build deployment started for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}].
 Please provide your approval : <a href="${env.BUILD_URL}input/">approve</a> !"""
  }
  
  def notifyStarted() {
-mail cc: 'ankurd@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com,tripurari.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] started", mimeType: 'text/html',
+mail cc: 'deepanshu.a@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] started", mimeType: 'text/html',
        body: """Build deployment started for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]."""
  }
 
 def notifyCompleted() {
-mail cc: 'ankurd@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com,tripurari.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] completed", mimeType: 'text/html',
+mail cc: 'deepanshu.a@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] completed", mimeType: 'text/html',
        body: """Build deployment completed for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]."""
  }
  
  def notifyAborted() {
-mail cc: 'ankurd@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com,tripurari.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] rejected/aborted", mimeType: 'text/html',
+mail cc: 'deepanshu.a@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] rejected/aborted", mimeType: 'text/html',
        body: """Build deployment rejected/aborted for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}].
 For more details : <a href="${env.BUILD_URL}console">click here</a> !"""
  }
 
   def notifyFailed() {
-mail cc: 'ankurd@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com,tripurari.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] failed", mimeType: 'text/html',
+mail cc: 'deepanshu.a@hcl.com', to: 'da9916@gmail.com,deepanshu.a@hcl.com', subject: "Deployment Notification: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] failed", mimeType: 'text/html',
        body: """Build deployment failed for Job ${env.JOB_NAME} [${env.BUILD_NUMBER}].
 For more details : <a href="${env.BUILD_URL}console">click here</a> !"""
  }
