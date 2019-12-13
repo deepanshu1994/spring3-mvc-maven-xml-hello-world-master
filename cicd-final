@@ -94,7 +94,7 @@ catch(err) {
 node{
 	def remote = [:]
 	remote.name = 'devserver'
-	remote.host = '13.234.76.64'
+	remote.host = '15.206.165.125'
 	remote.user = 'ec2-user'
 	withCredentials([string(credentialsId: 'dev_server_pwd', variable: 'devserverpwd')])
   	{
